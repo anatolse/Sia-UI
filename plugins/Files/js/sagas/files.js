@@ -4,7 +4,14 @@ import Path from 'path'
 import * as actions from '../actions/files.js'
 import * as constants from '../constants/files.js'
 import { List } from 'immutable'
-import { allowancePeriod, allowanceHosts, estimatedStorage, totalSpending, handleError, siadCall, readdirRecursive, parseDownloads, parseUploads } from './helpers.js'
+import { allowancePeriod, allowanceHosts, estimatedStorage, totalSpending, sendError, siadCall, readdirRecursive, parseDownloads, parseUploads } from './helpers.js'
+
+const isConnectionError = (e) =>
+	e.code !== 'undefined' &&
+		(e.code === 'ECONNREFUSED' ||
+		 e.code === 'ECONNRESET' ||
+		 e.code === 'ETIMEDOUT' ||
+		 e.code === 'EPIPE')
 
 
 // Query siad for the state of the wallet.
@@ -14,7 +21,11 @@ function* getWalletLockstateSaga() {
 		const response = yield siadCall('/wallet')
 		yield put(actions.receiveWalletLockstate(response.unlocked))
 	} catch (e) {
-		handleError(e)
+		if (isConnectionError(e)) {
+			console.error('siad communication error: ' + e.toString())
+			return
+		}
+		sendError(e)
 	}
 }
 
@@ -25,7 +36,11 @@ function* getFilesSaga() {
 		const files = List(response.files)
 		yield put(actions.receiveFiles(files))
 	} catch (e) {
-		handleError(e)
+		if (isConnectionError(e)) {
+			console.error('siad communication error: ' + e.toString())
+			return
+		}
+		sendError(e)
 	}
 }
 
@@ -52,6 +67,10 @@ function* getAllowanceSaga() {
 		yield put(actions.receiveAllowance(allowance.round(0).toString()))
 		yield put(actions.receiveSpending(spendingSC.round(0).toString()))
 	} catch (e) {
+		if (isConnectionError(e)) {
+			console.error('siad communication error: ' + e.toString())
+			return
+		}
 		console.error(e)
 	}
 }
@@ -72,7 +91,7 @@ function* setAllowanceSaga(action) {
 		})
 		yield put(actions.setAllowanceCompleted())
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 		yield put(actions.setAllowanceCompleted())
 		yield put(actions.closeAllowanceDialog())
 	}
@@ -85,7 +104,7 @@ function* getWalletBalanceSaga() {
 		const confirmedBalance = SiaAPI.hastingsToSiacoins(response.confirmedsiacoinbalance).round(2).toString()
 		yield put(actions.receiveWalletBalance(confirmedBalance))
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 	}
 }
 
@@ -105,7 +124,7 @@ function* uploadFileSaga(action) {
 			},
 		})
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 	}
 }
 
@@ -122,7 +141,7 @@ function *uploadFolderSaga(action) {
 			yield put(uploads.get(upload))
 		}
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 	}
 }
 
@@ -136,7 +155,7 @@ function* downloadFileSaga(action) {
 			},
 		})
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 	}
 }
 
@@ -146,7 +165,11 @@ function* getDownloadsSaga(action) {
 		const downloads = parseDownloads(action.since, response.downloads)
 		yield put(actions.receiveDownloads(downloads))
 	} catch (e) {
-		handleError(e)
+		if (isConnectionError(e)) {
+			console.error('siad communication error: ' + e.toString())
+			return
+		}
+		sendError(e)
 	}
 }
 
@@ -156,7 +179,11 @@ function* getUploadsSaga() {
 		const uploads = parseUploads(response.files)
 		yield put(actions.receiveUploads(uploads))
 	} catch (e) {
-		handleError(e)
+		if (isConnectionError(e)) {
+			console.error('siad communication error: ' + e.toString())
+			return
+		}
+		sendError(e)
 	}
 }
 
@@ -168,7 +195,7 @@ function* deleteFileSaga(action) {
 		})
 		yield put(actions.getFiles())
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 	}
 }
 
@@ -177,7 +204,11 @@ function* getContractCountSaga() {
 		const response = yield siadCall('/renter/contracts')
 		yield put(actions.setContractCount(response.contracts.length))
 	} catch (e) {
-		handleError(e)
+		if (isConnectionError(e)) {
+			console.error('siad communication error: ' + e.toString())
+			return
+		}
+		sendError(e)
 	}
 }
 
@@ -193,7 +224,7 @@ function* renameFileSaga(action) {
 		yield put(actions.getFiles())
 		yield put(actions.hideRenameDialog())
 	} catch (e) {
-		handleError(e)
+		sendError(e)
 	}
 }
 
