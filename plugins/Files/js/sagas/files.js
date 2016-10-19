@@ -4,7 +4,7 @@ import Path from 'path'
 import * as actions from '../actions/files.js'
 import * as constants from '../constants/files.js'
 import { List } from 'immutable'
-import { allowancePeriod, allowanceHosts, estimatedStorage, totalSpending, sendError, siadCall, readdirRecursive, parseDownloads, parseUploads } from './helpers.js'
+import { allowancePeriod, allowanceHosts, estimatedStorage, totalSpending, handleError, siadCall, readdirRecursive, parseDownloads, parseUploads } from './helpers.js'
 
 
 // Query siad for the state of the wallet.
@@ -14,7 +14,7 @@ function* getWalletLockstateSaga() {
 		const response = yield siadCall('/wallet')
 		yield put(actions.receiveWalletLockstate(response.unlocked))
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -25,7 +25,7 @@ function* getFilesSaga() {
 		const files = List(response.files)
 		yield put(actions.receiveFiles(files))
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -72,7 +72,7 @@ function* setAllowanceSaga(action) {
 		})
 		yield put(actions.setAllowanceCompleted())
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 		yield put(actions.setAllowanceCompleted())
 		yield put(actions.closeAllowanceDialog())
 	}
@@ -85,7 +85,7 @@ function* getWalletBalanceSaga() {
 		const confirmedBalance = SiaAPI.hastingsToSiacoins(response.confirmedsiacoinbalance).round(2).toString()
 		yield put(actions.receiveWalletBalance(confirmedBalance))
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -105,7 +105,7 @@ function* uploadFileSaga(action) {
 			},
 		})
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -122,7 +122,7 @@ function *uploadFolderSaga(action) {
 			yield put(uploads.get(upload))
 		}
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -136,7 +136,7 @@ function* downloadFileSaga(action) {
 			},
 		})
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -146,7 +146,7 @@ function* getDownloadsSaga(action) {
 		const downloads = parseDownloads(action.since, response.downloads)
 		yield put(actions.receiveDownloads(downloads))
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -156,7 +156,7 @@ function* getUploadsSaga() {
 		const uploads = parseUploads(response.files)
 		yield put(actions.receiveUploads(uploads))
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -168,7 +168,7 @@ function* deleteFileSaga(action) {
 		})
 		yield put(actions.getFiles())
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -177,7 +177,7 @@ function* getContractCountSaga() {
 		const response = yield siadCall('/renter/contracts')
 		yield put(actions.setContractCount(response.contracts.length))
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
@@ -193,7 +193,7 @@ function* renameFileSaga(action) {
 		yield put(actions.getFiles())
 		yield put(actions.hideRenameDialog())
 	} catch (e) {
-		sendError(e)
+		handleError(e)
 	}
 }
 
